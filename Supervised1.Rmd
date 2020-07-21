@@ -1,3 +1,19 @@
+#Week 13 Ip ##By Samuel Gitau
+
+##Overview In this project, we will work with a Kenyan entrepreneur, who has created an online cryptography course and would want to advertise it on her blog. She currently targets audiences originating from various countries. In the past, she ran ads to advertise a related course on the same blog and collected data in the process. She would now like to employ your services as a Data Science Consultant to help her identify which individuals are most likely to click on her ads.
+
+##Analytics question Our task is to help a Kenyan enterpreneur to predict the performance of her method to target individual to click on her ads to her crypotography course.
+
+##Metrics for success Our project will be considered successful if we can accurately predict without overfitting/underfitting
+
+##Experimental design Here is a step to step guide to our project
+
+Loading and previewing the dataset
+Studying the dataset properties
+Data cleaning
+EDA
+Creating models
+
 ## Installing important packages----
 ```{r}
 install.packages("dplyr")
@@ -195,7 +211,7 @@ ggplot(sorted_by_county, aes(x= Freq , y=Var1)) +
 
 
 ## Bivariate Anlysis----
-###Group mean numerical columns by click on the click
+###Group mean numerical columns by click on the ad
 ```{r}
 df_new %>%
   group_by(Clicked.on.Ad) %>%
@@ -217,14 +233,14 @@ ggplot(df_new) +
 ```
 
 
-###Relationship between Income and Clicking on the add
+###Relationship between Income and Clicking on the ad
 ```{r}
 ggplot(df_new) +
   geom_point(aes(x = Area.Income, y= Daily.Time.Spent.on.Site ,color = Clicked.on.Ad))
 ```
 
 
-###Relationship between Timestamp and Clicking on the add
+###Relationship between Timestamp and Clicking on the ad
 ```{r}
 ggplot(df_new) +
   geom_point(aes(x = Timestamp , y= Daily.Internet.Usage ,color = Clicked.on.Ad))
@@ -254,8 +270,86 @@ corrplot(res$r, type = "upper", order = "hclust",
 covv <- data.frame(cov(df_num))
 covv
 ```
-
-
-
-
-
+##Building models----
+##KNN
+#reading the database
+```{r}
+head(df_new)
+```
+#randomizing the rows
+```{r}
+random <- runif(150)
+df_random <- df_new[order(random),]
+```
+#checking the first rows of the randomized dataset
+```{r}
+head(df_random)
+```
+#randomization
+```{r}
+normal <- function(x) (
+  return( ((x - min(x)) /(max(x)-min(x))) )
+)
+df_nor <- as.data.frame(lapply(df_new[,c(2,3,4,5,8)], normal))
+```
+# Creating a random number equal 90% of total number of rows
+```{r}
+ran <- sample(1:nrow(df_new),0.9 * nrow(df_new))
+```
+# The training dataset extracted
+```{r}
+df_train <- df_random[ran,]
+```
+# The test dataset extracted
+```{r}
+df_test <- df_random[-ran,]
+```
+# Running the knn function
+```{r}
+library(class)
+pr <- knn(dia_train,dia_test,cl=dia_target,k=20)
+```
+#svm(suport vector machine)
+```{r}
+install.packages("mlbench")
+library(mlbench)
+install.packages("caret")
+library(caret)
+intrain <- createDataPartition(y = df_new$Clicked.on.Ad, p= 0.7, list = FALSE)
+training <- advertising[intrain,]
+testing <- advertising[-intrain,]
+```
+```{r}
+# We check the dimensions of out training dataframe and testing dataframe
+# ---
+# 
+dim(training)
+dim(testing)
+```
+```{r}
+advertising[] <- lapply(advertising, function(x) as.numeric(as.character(x)))
+```
+#changing one column into factor 
+```{r}
+training[["Clicked.on.Ad"]] = factor(training[["Clicked.on.Ad"]])
+```
+```{r}
+sum(!is.na(advertising$Clicked.on.Ad))
+```
+```{r}
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+svm_Linear <- train(Clicked.on.Ad ~., data = training, method = "svmLinear",
+trControl=trctrl,
+preProcess = c("center", "scale"),
+tuneLength = 10)
+```
+```{r}
+svm_Linear
+```
+```{r}
+test_pred <- predict(svm_Linear, newdata = testing)
+test_pred
+```
+```{r}
+confusionMatrix(table(test_pred, testing$Clicked.on.Ad))
+```
