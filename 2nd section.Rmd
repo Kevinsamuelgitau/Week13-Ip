@@ -2,6 +2,8 @@
 Samuel Gitau
 Week 13 IP
 ---
+## Overview
+In this project, we will be working with Kira Plastinina- a Russian brand that is sold through a defunct chain of retail stores in Russia, Ukraine, Kazakhstan, Belarus, China, Philippines, and Armenia. The brand’s Sales and Marketing team would like to understand their customer’s behavior from data that they have collected over the past year. More specifically, they would like to learn the characteristics of customer groups.
 
 ## Installing important packages----
 ```{r}
@@ -209,6 +211,6 @@ plot(df_model1[,3:4], col = result$cluster)
 ```
 Verifying the results of clustering
 ```{r}
-table(result$cluster)
+table(result$cluster, target)
 ```
 
