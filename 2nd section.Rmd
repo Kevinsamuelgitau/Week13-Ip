@@ -1,0 +1,214 @@
+---
+Samuel Gitau
+Week 13 IP
+---
+
+## Installing important packages----
+```{r}
+install.packages("dplyr")
+library(dplyr)
+install.packages("tidyr")
+library(tidyr)
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("tibble")
+library(tibble)
+install.packages("Hmisc")
+library('Hmisc')
+install.packages("pander")
+library(pander)
+install.packages("corrplot")
+library(corrplot)
+install.packages("magrittr")
+library(magrittr)
+install.packages("sos")
+library(sos)
+findFn("select")
+install.packages("data.table")
+library(data.table)
+install.packages("knitr")
+library(knitr)
+```
+## Loading the dataset ----
+```{r}
+df <- read.csv("shoppers.csv")
+```
+###Previewing the first 6 rows 
+```{r}
+head(df)
+```
+###Previewing the last 6 rows
+```{r}
+tail(df)
+```
+#checking shape of the dataset
+```{r}
+dim(df)
+```
+## Checking Information  our dataset----
+###Checking number of columns 
+```{r}
+colnames(df)
+```
+```{r}
+install.packages("tibble")
+library(tibble)
+df <- as.tibble(df)
+df
+```
+###Checking summary statistics of our dataset
+```{r}
+summary(df)
+```
+## Cleaning the Dataset----
+###Check for missing values
+```{r}
+colSums(is.na(df))
+```
+ ###dropping null values
+```{r}
+df_new<-na.omit(df)
+colSums(is.na(df_new))
+dim(df_new)
+```
+Converting boolean  to numerical 
+```{r}
+num <- c("Revenue", "Weekend" )
+df_new[num] <- sapply(df_new[num],as.numeric)
+sapply(df_new, class)
+```
+###checking for duplicated values and removing them
+```{r}
+duplicated_rows <- df_new[duplicated(df_new),]
+df_new <- unique(df_new)
+dim(df_new)
+
+```
+selecting numerical 
+```{r}
+num <- dplyr::select_if(df_new, is.numeric)
+head(num)
+```
+```{r}
+colnames(num)
+```
+##EDA----
+Univariate Analysis
+```{r}
+install.packages("ggplot2")
+library(ggplot2)
+ggplot(num) + geom_bar(aes(x = Revenue),fill = 'blue')
+```
+There were more false values compared to true
+###Bivariate analysis
+we will compare the other factors to revenue
+```{r Fig2}
+A <- ggplot(num , mapping = aes(x = Administrative_Duration,fill = Revenue , color = Revenue )) +
+         geom_histogram() + labs(title = "Administrative_Duration Distribution by  Revenue")
+A 
+B <- ggplot(num , mapping = aes(x = Informational_Duration,fill = Revenue , color = Revenue )) +
+         geom_histogram() + labs(title = "Informational_Duration Distribution by  Revenue")
+B 
+C <- ggplot(num , mapping = aes(x = ProductRelated ,fill = Revenue , color = Revenue )) +
+         geom_histogram() + labs(title = "ProductRelated Distribution by  Revenue")
+C + theme_bw()
+D <- ggplot(num , mapping = aes(x = ProductRelated_Duration,fill = Revenue , color = Revenue )) +
+         geom_histogram() + labs(title = "ProductRelated_Duration Distribution by  Revenue")
+D 
+E <- ggplot(num , mapping = aes(x = BounceRates,fill = Revenue , color = Revenue )) +
+         geom_histogram() + labs(title = "Bounce Rates Distribution by  Revenue")
+E 
+G <- ggplot(num , mapping = aes(x = ExitRates ,fill = Revenue , color = Revenue )) +
+         geom_histogram() + labs(title = "ExitRates Distribution by  Revenue")
+G 
+H <- ggplot(num , mapping = aes(x = PageValues ,fill = Revenue , color = Revenue )) +
+         geom_histogram() + labs(title = "PageValues Distribution by  Revenue")
+H 
+```
+```{r Fig1, fig.height=5, fig.width= 10}
+par(mfrow=c(8,1))
+ggplot(num , mapping = aes(x = Administrative, color = Revenue )) +
+         geom_freqpoly() + labs(title = "Administrative Distribution by Revenue")
+ggplot(num , mapping = aes(x = Informational, color = Revenue )) +
+         geom_freqpoly() + labs(title = "Informational Distribution by Revenue")
+ggplot(num , mapping = aes(x = SpecialDay, color = Revenue )) +
+         geom_freqpoly() + labs(title = "SpecialDay Distribution by Revenue")
+ggplot(num , mapping = aes(x = OperatingSystems, color = Revenue )) +
+         geom_freqpoly() + labs(title = "OperatingSystems Distribution by Revenue")
+ggplot(num , mapping = aes(x = Browser, color = Revenue )) +
+         geom_freqpoly() + labs(title = "Browser Distribution by Revenue")
+ggplot(num , mapping = aes(x = Region, color = Revenue )) +
+         geom_freqpoly() + labs(title = "Region Distribution by Revenue")
+ggplot(num , mapping = aes(x = TrafficType, color = Revenue )) +
+         geom_freqpoly() + labs(title = "TrafficType Distribution by Revenue")
+ggplot(num , mapping = aes(x = Weekend, color = Revenue )) +
+         geom_freqpoly() + labs(title = "Weekend Distribution by Revenue")
+```
+finding correlation 
+```{r}
+install.packages("Hmisc")
+library('Hmisc')
+res <- rcorr(as.matrix(num))
+corr <- data.frame(res$r)
+corr
+```
+```{r, fig.height=10, fig.width= 10}
+corrplot(res$r,  order = "hclust", 
+         tl.col = "black", tl.srt = 45)
+```
+```{r}
+plot <- data.frame(corr$Revenue)
+rownames(plot) <- colnames(corr)
+plot
+```
+##Building models----
+###Feature selection
+We will only select features with positive correlation
+```{r}
+column <- c('Administrative', 'Administrative_Duration',"Informational", "Informational_Duration",
+            "ProductRelated", "ProductRelated_Duration", "PageValues", "Browser", "Weekend")
+df <- num[column]
+head(df)
+```
+###K-Means Clustering---
+```{r}
+target <- num$Revenue
+```
+scale our Features dataframe
+```{r}
+# We define a normal function which will normalize the set of values according to its minimum value and maximum value.
+normal <- function(x) (
+  return( ((x - min(x)) /(max(x)-min(x))) )
+)
+normal(1:9)
+df_model1 <- as.data.frame(lapply(df, normal))
+summary(df_model1)
+```
+Applying the K-means clustering (k)=3
+```{r}
+result<- kmeans(df_model1,3) 
+```
+Checking the records in each cluster
+```{r}
+result$size
+```
+Getting the value of cluster center datapoint value
+```{r}
+result$centers 
+```
+Getting the cluster vector 
+```{r}
+head(result$cluster)
+tail(result$cluster)
+```
+clustering results
+```{r}
+par(mfrow = c(1,2), mar = c(5,4,2,2))
+plot(df_model1[,1:2], col = result$cluster) 
+plot(df_model1[,3:4], col = result$cluster) 
+```
+Verifying the results of clustering
+```{r}
+table(result$cluster)
+```
+
